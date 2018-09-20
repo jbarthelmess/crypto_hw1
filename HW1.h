@@ -111,6 +111,8 @@ int half_P4_perm(int half)
 
 int key_shift(int key_half)
 {
+    // This function shifts key half bits one to the left
+    // wrapping each bit back to the right as needed
     int up = 0;
     if(key_half >= 16)
         up = 1;
@@ -124,13 +126,14 @@ void get_keys(int* k1, int* k2, int key)
 {
     int key_perm = key_P10_perm(key);
     
+    // splits 10 bit key into 5 bit halves
     int mask = 31; // 00011111
     int right = mask & key_perm; // right 5 bits
     mask = mask << 5;
     int left = mask & key_perm; // left 5 bits
     left = left >> 5;
     
-    
+    // first left shift for first derivative key
     left = key_shift(left);
     right = key_shift(right);
     left = left << 5;
@@ -138,9 +141,9 @@ void get_keys(int* k1, int* k2, int key)
     
     left = left >> 5;
     
+    // second left shift for second derivative key
     left = key_shift(left);
     right = key_shift(right);
-    
     left = left << 5;
     *k2 = key_P8_perm(left+right);
 }
@@ -241,21 +244,28 @@ int f(int half, int key)
     // or make a global <--- tho this might be bad
     
     int expanded = f_expand(half);
-    int xor = expanded^key;
+    int xor_val = expanded^key;
     
     // bitwise AND selects right half of xor'd value (00001111)
     int mask = 15; // 00001111
-    int right = mask & xor;
+    int right = mask & xor_val;
     
     // shifting up 4 makes bitwise AND select left half of xor'd value (11110000)
     mask = mask << 4;
-    int left = mask & xor;
+    int left = mask & xor_val;
     left = left >> 4; // shifting so it is in expected bounds for bit_select
     
     int left_result = bit_select(s_0, left);
     int right_result = bit_select(s_1, right);
-    
-    
+    /*
+    for(i = 0; i<4; i++)
+    {
+        free(s_0[i]);
+        free(s_1[i]);
+    }
+    free(s_0);
+    free(s_1);
+    */
     left_result = left_result << 2;
     return half_P4_perm(left_result + right_result);
 }
@@ -265,18 +275,23 @@ int f(int half, int key)
 int encrypt(int plain_text, int key) 
 {
     int init_perm = plain_text_init_perm(plain_text);
+    
+    // mask used to split permuted plaintext into halves
     int mask = 240; // 11110000
     int left = mask & init_perm; 
     mask = mask >> 4;
     int right = mask & init_perm;
     left = left >> 4;
     
+    // obtain each stages keys
     int k1, k2;
     get_keys(&k1, &k2, key);
     
+    // these calculate the resulting halves, per the documentation
     int right_final = left ^ f(right, k1);
     int left_final = right ^ f(right_final, k2);
     
+    // moving left_final up 4 so they can be added for the final permutation
     left_final = left_final << 4;
     return inverse_init_perm(left_final+right_final);
 }
@@ -284,18 +299,23 @@ int encrypt(int plain_text, int key)
 int decrypt(int cipher, int key)
 {
     int init_perm = plain_text_init_perm(cipher);
+    
+    // mask used to split permuted plaintext into halves
     int mask = 240; // 11110000
     int left = mask & init_perm;
     mask = mask >> 4;
     int right = mask & init_perm;
     left = left >> 4;
     
+    // obtain each stages keys
     int k1, k2;
     get_keys(&k1, &k2, key);
     
+    // these calculate the resulting halves, per the documentation
     int right_final = left ^ f(right, k2);
     int left_final = right ^ f(right_final, k1);
     
+    // moving left_final up 4 so they can be added for the final permutation
     left_final = left_final << 4;
     return inverse_init_perm(left_final+right_final);
 }
