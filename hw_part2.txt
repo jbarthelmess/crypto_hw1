@@ -1,0 +1,50 @@
+HW1 Part 2 Josh Barthelmess
+
+Q1
+
+To attack the s_0 box we would first need to make the differential table, which comes out like this
+(after removing duplicates)
+
+16 0 0 0
+0 1 5 2
+0 5 3 0
+1 2 0 5
+1 2 4 1
+5 0 2 1
+0 1 1 6
+2 5 1 0
+1 2 4 1
+4 1 1 2
+2 1 1 4
+1 4 2 1
+4 1 1 2
+1 2 4 1
+1 4 2 1
+2 1 1 4
+
+
+Now that we have this, we can make some inferences about the key based on what the output of some
+encrypted text is. So if given the input 1000, we can see how the output changes based on what we 
+know the output of 1000 is supposed to be. Using this information, we can get partial information 
+about the key, and doing this repeatedly would allow us to obtain the full key.
+
+
+Q2
+
+H(K | C) = H(K) + H(P) - H(E)
+
+H(X) = SUM(p_i * log_2 ( p_i))
+
+H(K) = 1.5
+H(P) = 1.45915
+
+H(E) = 
+
+p(1) = 7/24  <--- These were found using probabilities of obtaining the ciphertext given the 
+p(2) = 10/24      probability of obtaining the given key and plaintext
+p(3) = 3/24
+p(4) = 4/24
+
+H(E) = 1.8506
+
+H(K|C) = 1.109
